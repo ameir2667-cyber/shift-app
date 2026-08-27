@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>نظام النوبات والتوثيق</title>
+<meta name="description" content="تطبيق عربي لإدارة النوبات والمجموعات وتوثيق المستخدمين" />
+<meta name="theme-color" content="#0E2422" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230E2422'/%3E%3Ctext x='50' y='65' font-size='55' text-anchor='middle'%3E🚗%3C/text%3E%3C/svg%3E" />
+<style>
+/* =========================================================
+   styles.css — نظام النوبات والتوثيق
+   هوية بصرية: لوحة تشغيل ميدانية (Shift Ops Console)
+   الألوان مستوحاة من ألوان السلامة الميدانية: كهرماني على أخضر داكن.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&family=Almarai:wght@400;700;800&display=swap');
+
+:root {
+  --ink: #0E2422;
+  --ink-2: #153330;
+  --ink-3: #1C3B37;
+  --paper: #EEF1EC;
+  --paper-dim: #B9C7C2;
+  --accent: #F5A623;
+  --accent-dim: #7A5A1E;
+  --good: #3FB68B;
+  --good-bg: rgba(63, 182, 139, .15);
+  --warn: #E8863B;
+  --warn-bg: rgba(232, 134, 59, .15);
+  --bad: #E15252;
+  --bad-bg: rgba(225, 82, 82, .15);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 8px 24px rgba(0,0,0,.25);
+  --font-display: 'Tajawal', sans-serif;
+  --font-body: 'Almarai', sans-serif;
+}
+
+html.dark {
+  --ink: #081613;
+  --ink-2: #0F211E;
+  --ink-3: #142E29;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  direction: rtl;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  padding-bottom: 76px;
+  min-height: 100vh;
+  background-image:
+    linear-gradient(180deg, var(--ink-2) 0%, var(--ink) 220px);
+}
+
+h1, h2, h3 { font-family: var(--font-display); margin: 0 0 8px; }
+p { margin: 0 0 6px; line-height: 1.6; }
+.muted { color: var(--paper-dim); }
+.small { font-size: 12.5px; }
+.center-text { text-align: center; }
+.hidden { display: none !important; }
+
+button, input, select {
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+
+/* ---------- شاشات عامة ---------- */
+.screen {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 18px 16px 24px;
+  animation: fadeIn .25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+
+.screen.center {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 24px;
+}
+
+/* ---------- شريط علوي بسيط ---------- */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.icon-btn {
+  background: var(--ink-3);
+  border: none;
+  color: var(--paper);
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* ---------- شاشة تسجيل الدخول ---------- */
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--ink-2);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--radius);
+  padding: 28px 22px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: repeating-linear-gradient(
+    -45deg, var(--accent) 0 10px, transparent 10px 20px
+  );
+  opacity: .85;
+}
+.brand { font-size: 26px; font-weight: 900; }
+
+.form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.form label {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 13.5px; color: var(--paper-dim);
+}
+.form input, select {
+  background: var(--ink-3);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--paper);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+.form input:focus, select:focus { border-color: var(--accent); }
+
+.switch-link { margin-top: 14px; font-size: 13.5px; text-align: center; }
+.switch-link a { color: var(--accent); text-decoration: none; font-weight: 700; }
+
+.error-box {
+  margin-top: 12px;
+  background: var(--bad-bg);
+  color: #ffb4b4;
+  border: 1px solid var(--bad);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+}
+
+/* ---------- أزرار ---------- */
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px 18px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .12s ease, opacity .12s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn-block { width: 100%; }
+.big-btn { padding: 16px; font-size: 16px; margin-top: 8px; }
+.btn-primary { background: var(--accent); color: #241701; }
+.btn-secondary { background: var(--ink-3); color: var(--paper); margin-top: 8px; }
+.btn-danger { background: var(--bad-bg); color: #ffb4b4; border: 1px solid var(--bad); margin-top: 18px; }
+.btn:disabled { opacity: .6; }
+
+/* ---------- الرئيسية ---------- */
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.greeting { font-family: var(--font-display); font-weight: 900; font-size: 20px; }
+.conn-badge { font-size: 13px; color: var(--paper-dim); }
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent); color: #241701;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 18px;
+}
+
+.shift-block { margin-bottom: 20px; }
+.shift-title {
+  font-size: 15px;
+  color: var(--accent);
+  border-inline-start: 3px solid var(--accent);
+  padding-inline-start: 8px;
+  margin-bottom: 10px;
+}
+.group-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.group-card {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--radius-sm);
+  padding: 16px 10px;
+  color: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.group-card:active { border-color: var(--accent); }
+.group-card.closed { opacity: .55; }
+.group-icon { font-size: 20px; }
+.group-name { font-size: 13.5px; font-weight: 700; }
+
+/* ---------- بطاقات عامة ---------- */
+.card {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card-list { display: flex; flex-direction: column; gap: 8px; }
+
+.member-row, .log-row {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.member-name, .log-name { font-weight: 700; font-size: 14.5px; }
+
+.badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.badge-ok { background: var(--good-bg); color: var(--good); }
+.badge-off { background: var(--bad-bg); color: #ffb4b4; }
+
+.row-actions { display: flex; gap: 6px; }
+.chip-btn {
+  background: var(--ink-3);
+  color: var(--paper);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.chip-select {
+  background: var(--ink-3);
+  color: var(--paper);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-size: 12px;
+  max-width: 140px;
+}
+.member-row.wrap { flex-wrap: wrap; }
+.inline-edit {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed rgba(255,255,255,.2);
+  color: var(--paper);
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 4px 0;
+  flex: 1;
+}
+.inline-edit:focus { outline: none; border-color: var(--accent); }
+
+.tab-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding-bottom: 4px;
+}
+.tab-btn {
+  flex-shrink: 0;
+  background: var(--ink-2);
+  border: 1px solid var(--ink-3);
+  color: var(--paper-dim);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab-btn.active { background: var(--accent); color: #241701; border-color: var(--accent); }
+
+/* ---------- الكاميرا ---------- */
+.camera-wrap {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 14px 0;
+  border: 1px solid var(--ink-3);
+}
+#cam-video, #cam-preview { width: 100%; height: 100%; object-fit: cover; }
+.cam-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+/* ---------- السجل ---------- */
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.filter-row select, .filter-row input {
+  grid-column: span 1;
+  background: var(--ink-2);
+  border: 1px solid var(--ink-3);
+  color: var(--paper);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+}
+.filter-row input[type=search] { grid-column: span 2; }
+
+.log-thumb {
+  width: 46px; height: 46px; border-radius: 10px; object-fit: cover;
+  flex-shrink: 0;
+}
+.log-thumb.placeholder {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink-3);
+}
+.log-info { flex: 1; }
+.log-meta { margin-top: 2px; }
+
+/* ---------- الإحصائيات ---------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+}
+.stat-num { font-family: var(--font-display); font-size: 26px; font-weight: 900; color: var(--accent); }
+.stat-label { font-size: 12.5px; color: var(--paper-dim); }
+
+/* ---------- إعدادات ---------- */
+.switch-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.switch-row input[type=checkbox] { width: 20px; height: 20px; }
+
+/* ---------- شريط التنقل السفلي ---------- */
+#bottom-nav {
+  position: fixed;
+  bottom: 0; inset-inline: 0;
+  background: var(--ink-2);
+  border-top: 1px solid var(--ink-3);
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  z-index: 40;
+}
+#bottom-nav button {
+  background: none; border: none; color: var(--paper-dim);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 11.5px; cursor: pointer; padding: 4px 14px;
+}
+#bottom-nav button.active { color: var(--accent); }
+#bottom-nav .nav-icon { font-size: 19px; }
+
+/* ---------- تنبيهات Toast ---------- */
+#toast-holder {
+  position: fixed;
+  top: 14px; inset-inline: 0;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; z-index: 100; pointer-events: none;
+}
+.toast {
+  background: var(--ink-3);
+  color: var(--paper);
+  border: 1px solid rgba(255,255,255,.1);
+  padding: 10px 16px;
+  border-radius: 30px;
+  font-size: 13.5px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all .3s ease;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-error { border-color: var(--bad); color: #ffb4b4; }
+
+/* ---------- سبينر ---------- */
+.spinner {
+  width: 34px; height: 34px;
+  border: 3px solid var(--ink-3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- استجابة الشاشات ---------- */
+@media (min-width: 640px) {
+  .group-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+</style>
+</head>
+<body>
+
+  <div id="toast-holder"></div>
+
+  <main id="app"></main>
+
+  <nav id="bottom-nav" style="display:none">
+    <button data-page="home"><span class="nav-icon">🏠</span>الرئيسية</button>
+    <button data-page="log"><span class="nav-icon">📋</span>السجل</button>
+    <button data-page="settings"><span class="nav-icon">⚙️</span>الإعدادات</button>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+  <script>
+
+/* ===== supabase-config.js ===== */
+/*
+  supabase-config.js
+  ------------------
+  ضع هنا بيانات مشروعك في Supabase فقط.
+  لا تضع أبدًا service_role أو secret key هنا — هذا الملف يعمل داخل المتصفح
+  ويمكن لأي شخص فتحه ورؤية محتواه.
+
+  من أين أحضر القيم؟
+  Supabase Dashboard → Project Settings → API
+  - Project URL              → SUPABASE_URL
+  - anon / publishable key   → SUPABASE_PUBLISHABLE_KEY
+*/
+
+window.SUPABASE_CONFIG = {
+  SUPABASE_URL: "https://pdqwwtupzggqynhqzkmt.supabase.co",
+  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_OyMeN07eU_RONrWAYNwMOw_pbMwpGjL",
+
+  // رمز دخول لوحة المطور (طبقة حماية إضافية في الواجهة فقط،
+  // الحماية الحقيقية تكون عبر role + RLS في قاعدة البيانات)
+  DEVELOPER_ACCESS_CODE: "158512",
+};
+
+
+/* ===== database.js ===== */
+/*
+  database.js
+  -----------
+  نقطة الاتصال الوحيدة بـ Supabase. كل الملفات الأخرى تستخدم window.DB
+  ولا تتحدث مع Supabase مباشرة، حتى نستطيع لاحقًا تغيير أي تفصيل هنا
+  دون المساس بباقي الملفات.
+*/
+
+(function () {
+  const cfg = window.SUPABASE_CONFIG || {};
+  let client = null;
+  let ready = false;
+
+  function init() {
+    if (
+      !window.supabase ||
+      !cfg.SUPABASE_URL ||
+      cfg.SUPABASE_URL.includes("YOUR-PROJECT-REF")
+    ) {
+      console.warn("⚠️ لم يتم ضبط supabase-config.js بعد. التطبيق سيعمل محليًا فقط.");
+      ready = false;
+      return;
+    }
+    client = window.supabase.createClient(
+      cfg.SUPABASE_URL,
+      cfg.SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          storage: window.localStorage,
+        },
+      }
+    );
+    ready = true;
+  }
+
+  init();
+
+  window.DB = {
+    isReady: () => ready,
+    client: () => client,
+
+    // ---------- الاتصال ----------
+    async ping() {
+      if (!ready) return false;
+      try {
+        const { error } = await client.from("shifts").select("id").limit(1);
+        return !error;
+      } catch (e) {
+        return false;
+      }
+    },
+
+    // ---------- الملف الشخصي ----------
+    async getProfile(userId) {
+      if (!ready) return null;
+      const { data, error } = await client
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      if (error) return null;
+      return data;
+    },
+
+    async updateProfile(userId, patch) {
+      if (!ready) return { error: "offline" };
+      return await client.from("profiles").update(patch).eq("id", userId);
+    },
+
+    // ---------- النوبات والمجموعات ----------
+    async getShifts() {
+      if (!ready) return [];
+      const { data, error } = await client
+        .from("shifts")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data || [];
+    },
+
+    async getGroups(shiftId) {
+      if (!ready) return [];
+      let q = client.from("groups").select("*").order("created_at", { ascending: true });
+      if (shiftId) q = q.eq("shift_id", shiftId);
+      const { data, error } = await q;
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data || [];
+    },
+
+    async getMembers(groupId) {
+      if (!ready) return [];
+      const { data, error } = await client
+        .from("profiles")
+        .select("*")
+        .eq("group_id", groupId)
+        .eq("active", true);
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data || [];
+    },
+
+    async updateGroup(groupId, patch) {
+      if (!ready) return { error: "offline" };
+      return await client.from("groups").update(patch).eq("id", groupId);
+    },
+
+    async updateShift(shiftId, patch) {
+      if (!ready) return { error: "offline" };
+      return await client.from("shifts").update(patch).eq("id", shiftId);
+    },
+
+    async createShift(name) {
+      if (!ready) return { error: "offline" };
+      return await client.from("shifts").insert({ name }).select().single();
+    },
+
+    async createGroup(shiftId, name) {
+      if (!ready) return { error: "offline" };
+      return await client
+        .from("groups")
+        .insert({ shift_id: shiftId, name })
+        .select()
+        .single();
+    },
+
+    // ---------- التوثيق ----------
+    async insertVerification(row) {
+      if (!ready) return { error: "offline" };
+      return await client.from("verifications").insert(row).select().single();
+    },
+
+    async getVerifications(filters = {}) {
+      if (!ready) return [];
+      let q = client
+        .from("verifications")
+        .select("*, profiles:user_id(name, phone)")
+        .order("created_at", { ascending: false })
+        .limit(filters.limit || 200);
+      if (filters.shiftId) q = q.eq("shift_id", filters.shiftId);
+      if (filters.groupId) q = q.eq("group_id", filters.groupId);
+      if (filters.userId) q = q.eq("user_id", filters.userId);
+      const { data, error } = await q;
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data || [];
+    },
+
+    // ---------- المستخدمون (لوحة المشرف/المطور) ----------
+    async getAllUsers() {
+      if (!ready) return [];
+      const { data, error } = await client
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data || [];
+    },
+
+    async setUserRole(userId, role) {
+      if (!ready) return { error: "offline" };
+      return await client.from("profiles").update({ role }).eq("id", userId);
+    },
+
+    async setUserActive(userId, active) {
+      if (!ready) return { error: "offline" };
+      return await client.from("profiles").update({ active }).eq("id", userId);
+    },
+
+    async moveUser(userId, shiftId, groupId) {
+      if (!ready) return { error: "offline" };
+      return await client
+        .from("profiles")
+        .update({ shift_id: shiftId, group_id: groupId })
+        .eq("id", userId);
+    },
+
+    // ---------- سجل عمليات الإدارة ----------
+    async logAdminAction(row) {
+      if (!ready) return { error: "offline" };
+      return await client.from("admin_logs").insert(row);
+    },
+
+    async getAdminLogs(limit = 200) {
+      if (!ready) return [];
+      const { data, error } = await client
+        .from("admin_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) return [];
+      return data || [];
+    },
+  };
+})();
+
+
+/* ===== auth.js ===== */
+/*
+  auth.js
+  -------
+  تسجيل الدخول والتسجيل باستخدام: رقم الجوال + كلمة المرور فقط.
+  لا SMS ولا OTP. يعتمد على Supabase Auth (signUp / signInWithPassword)
+  مع تحويل رقم الجوال إلى صيغة هاتف دولية بسيطة.
+
+  ملاحظة مهمة يجب ضبطها من لوحة Supabase:
+  Authentication → Providers → Phone
+  - فعّل "Enable Phone provider"
+  - عطّل "Confirm phone" (Phone confirmations) حتى لا يُطلب أي رمز تحقق.
+  بدون تعطيل هذا الخيار سيرفض Supabase تسجيل الدخول لأنه يعتبر الهاتف
+  غير مؤكد. هذا إعداد في اللوحة وليس كودًا نكتبه.
+*/
+
+(function () {
+  const SESSION_KEY = "app_session_cache_v1";
+
+  function normalizePhone(raw) {
+    let p = (raw || "").trim().replace(/[\s-]/g, "");
+    if (p.startsWith("00")) p = "+" + p.slice(2);
+    // تصحيح تلقائي للأرقام السعودية المحلية إلى الصيغة الدولية
+    if (p.startsWith("05") && p.length === 10) p = "+966" + p.slice(1);
+    else if (/^5\d{8}$/.test(p)) p = "+966" + p;
+    // إن كان الرقم مكتوبًا بصيغة دولية كاملة (يبدأ بـ +) نتركه كما هو
+    return p;
+  }
+
+  async function signUp({ name, phone, password }) {
+    const client = window.DB.client();
+    if (!window.DB.isReady() || !client) {
+      return { error: "التطبيق غير متصل بقاعدة البيانات بعد. تحقق من supabase-config.js" };
+    }
+    const phoneNorm = normalizePhone(phone);
+
+    const { data, error } = await client.auth.signUp({
+      phone: phoneNorm,
+      password,
+      options: {
+        data: { name },
+      },
+    });
+
+    if (error) {
+      return { error: translateAuthError(error) };
+    }
+
+    const userId = data.user?.id;
+    if (userId) {
+      // ننشئ صف profiles المرتبط — النوبة/المجموعة تُسند لاحقًا من المشرف
+      // أو تلقائيًا لأول مجموعة نشطة (اختياري: عدّل حسب سياسة العمل).
+      await client.from("profiles").upsert({
+        id: userId,
+        name,
+        phone: phoneNorm,
+        role: "user",
+        active: true,
+      });
+    }
+
+    return { data };
+  }
+
+  async function signIn({ phone, password }) {
+    const client = window.DB.client();
+    if (!window.DB.isReady() || !client) {
+      return { error: "التطبيق غير متصل بقاعدة البيانات بعد. تحقق من supabase-config.js" };
+    }
+    const phoneNorm = normalizePhone(phone);
+    const { data, error } = await client.auth.signInWithPassword({
+      phone: phoneNorm,
+      password,
+    });
+    if (error) return { error: translateAuthError(error) };
+
+    // منع دخول الحسابات المعطّلة من قبل الإدارة
+    const profile = await window.DB.getProfile(data.user.id);
+    if (profile && profile.active === false) {
+      await client.auth.signOut();
+      return { error: "تم تعطيل حسابك من قبل الإدارة. تواصل مع المشرف." };
+    }
+
+    return { data };
+  }
+
+  async function signOut() {
+    const client = window.DB.client();
+    if (client) await client.auth.signOut();
+    localStorage.removeItem(SESSION_KEY);
+  }
+
+  async function getSessionUser() {
+    const client = window.DB.client();
+    if (!client) return null;
+    const { data } = await client.auth.getSession();
+    const session = data?.session;
+    if (!session) return null;
+    const profile = await window.DB.getProfile(session.user.id);
+    return profile
+      ? { ...profile, authUser: session.user }
+      : { id: session.user.id, authUser: session.user };
+  }
+
+  function translateAuthError(error) {
+    const msg = (error.message || "").toLowerCase();
+    if (msg.includes("already registered") || msg.includes("already exists")) {
+      return "رقم الجوال مسجل مسبقًا. جرّب تسجيل الدخول بدلًا من إنشاء حساب.";
+    }
+    if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
+      return "رقم الجوال أو كلمة المرور غير صحيحة.";
+    }
+    if (msg.includes("phone") && msg.includes("confirm")) {
+      return "إعدادات Supabase تطلب تأكيد الهاتف عبر SMS. يجب تعطيل 'Confirm phone' من لوحة Supabase (Authentication → Providers → Phone).";
+    }
+    if (msg.includes("password")) {
+      return "كلمة المرور غير مطابقة للشروط (6 أحرف على الأقل).";
+    }
+    return error.message || "حدث خطأ غير متوقع أثناء المصادقة.";
+  }
+
+  window.Auth = { signUp, signIn, signOut, getSessionUser, normalizePhone };
+})();
+
+
+/* ===== storage.js ===== */
+/*
+  storage.js
+  ----------
+  ضغط الصور قبل الرفع، والتعامل مع Supabase Storage (bucket: verifications).
+*/
+
+(function () {
+  const BUCKET = "verifications";
+
+  function compressImage(blob, maxWidth = 900, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (out) => (out ? resolve(out) : reject(new Error("فشل ضغط الصورة"))),
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  async function uploadVerificationImage(blob, userId) {
+    const client = window.DB.client();
+    if (!window.DB.isReady() || !client) {
+      throw new Error("لا يوجد اتصال بقاعدة البيانات");
+    }
+    const compressed = await compressImage(blob);
+    const path = `${userId}/${Date.now()}.jpg`;
+    const { error } = await client.storage
+      .from(BUCKET)
+      .upload(path, compressed, { contentType: "image/jpeg", upsert: false });
+    if (error) throw error;
+    const { data } = client.storage.from(BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  // تحويل blob إلى base64 لتخزينه محليًا في قائمة انتظار الأوفلاين
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function base64ToBlob(base64) {
+    const [meta, data] = base64.split(",");
+    const mime = meta.match(/:(.*?);/)[1];
+    const bin = atob(data);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  window.Storage = {
+    compressImage,
+    uploadVerificationImage,
+    blobToBase64,
+    base64ToBlob,
+  };
+})();
+
+
+/* ===== sync.js ===== */
+/*
+  sync.js
+  -------
+  طابور محلي (IndexedDB) للعمليات التي تحدث أثناء انقطاع الإنترنت.
+  عند عودة الاتصال يقوم بمزامنتها تلقائيًا مع Supabase.
+  هذا الملف لا يمنع فتح التطبيق أبدًا مهما كانت حالة الاتصال.
+*/
+
+(function () {
+  const DB_NAME = "app_offline_db";
+  const STORE = "pending_verifications";
+  let idb = null;
+
+  function openIDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE)) {
+          db.createObjectStore(STORE, { keyPath: "localId" });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function ensureDB() {
+    if (!idb) idb = await openIDB();
+    return idb;
+  }
+
+  async function queueVerification(entry) {
+    const db = await ensureDB();
+    entry.localId = `local_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    entry.status = "pending";
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).put(entry);
+      tx.oncomplete = () => resolve(entry);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function getQueue() {
+    const db = await ensureDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readonly");
+      const req = tx.objectStore(STORE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function removeFromQueue(localId) {
+    const db = await ensureDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).delete(localId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  let syncing = false;
+  const listeners = new Set();
+  function onStatusChange(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+  function notify(status) {
+    listeners.forEach((fn) => {
+      try {
+        fn(status);
+      } catch (e) {}
+    });
+  }
+
+  async function syncPending() {
+    if (syncing) return;
+    if (!navigator.onLine) return;
+    if (!window.DB.isReady()) return;
+
+    const queue = await getQueue();
+    if (queue.length === 0) return;
+
+    syncing = true;
+    notify({ state: "syncing", count: queue.length });
+
+    for (const item of queue) {
+      try {
+        let imageUrl = item.imageUrl || null;
+        if (!imageUrl && item.imageBase64) {
+          const blob = window.Storage.base64ToBlob(item.imageBase64);
+          imageUrl = await window.Storage.uploadVerificationImage(blob, item.user_id);
+        }
+        const { error } = await window.DB.insertVerification({
+          user_id: item.user_id,
+          group_id: item.group_id,
+          shift_id: item.shift_id,
+          image_url: imageUrl,
+          note: item.note || null,
+          created_at: item.created_at,
+        });
+        if (!error) {
+          await removeFromQueue(item.localId);
+        }
+      } catch (e) {
+        console.error("فشل مزامنة عنصر:", e);
+        // نتوقف عن هذا العنصر ونكمل الباقي في المحاولة القادمة
+      }
+    }
+
+    syncing = false;
+    const remaining = await getQueue();
+    notify({ state: remaining.length ? "partial" : "done", count: remaining.length });
+  }
+
+  window.addEventListener("online", () => {
+    notify({ state: "online" });
+    syncPending();
+  });
+  window.addEventListener("offline", () => notify({ state: "offline" }));
+
+  window.Sync = {
+    queueVerification,
+    getQueue,
+    removeFromQueue,
+    syncPending,
+    onStatusChange,
+    isOnline: () => navigator.onLine,
+  };
+
+  // محاولة مزامنة عند تحميل التطبيق
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(syncPending, 1500);
+    setInterval(syncPending, 30000);
+  });
+})();
+
+
+/* ===== verification.js ===== */
+/*
+  verification.js
+  ----------------
+  تدفق التوثيق بالكاميرا: فتح الكاميرا → التقاط صورة → تسجيل الوقت →
+  حفظ (مباشر أو في قائمة الانتظار عند انقطاع الإنترنت) → تحديث الحالة.
+
+  هذا الملف مكتوب من جديد بالكامل ومعزول بحيث لا يسبب أخطاء
+  "verifyUser is not defined" أو شاشة سوداء: كل دالة معرفة داخل
+  كائن واحد window.Verification، ولا يوجد أي كود ينفَّذ تلقائيًا
+  خارج معالجات أحداث واضحة.
+*/
+
+(function () {
+  let stream = null;
+  let currentFacing = "environment";
+
+  async function openCamera(videoEl, facing) {
+    closeCamera();
+    if (facing) currentFacing = facing;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: currentFacing } },
+        audio: false,
+      });
+      videoEl.srcObject = stream;
+      await videoEl.play();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: "تعذر فتح الكاميرا. تأكد من منح الإذن للتطبيق." };
+    }
+  }
+
+  function toggleFacing() {
+    currentFacing = currentFacing === "environment" ? "user" : "environment";
+    return currentFacing;
+  }
+
+  function closeCamera() {
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+  }
+
+  function captureFrame(videoEl) {
+    const canvas = document.createElement("canvas");
+    canvas.width = videoEl.videoWidth || 720;
+    canvas.height = videoEl.videoHeight || 960;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.85);
+    });
+  }
+
+  /**
+   * ينفذ عملية توثيق كاملة لمستخدم داخل مجموعة/نوبة معيّنة.
+   * targetUserId: المستخدم الذي يتم توثيقه (نفسه غالبًا)
+   */
+  async function verifyUser({ targetUserId, groupId, shiftId, imageBlob }) {
+    const createdAt = new Date().toISOString();
+
+    if (navigator.onLine && window.DB.isReady()) {
+      try {
+        const imageUrl = await window.Storage.uploadVerificationImage(
+          imageBlob,
+          targetUserId
+        );
+        const { data, error } = await window.DB.insertVerification({
+          user_id: targetUserId,
+          group_id: groupId,
+          shift_id: shiftId,
+          image_url: imageUrl,
+          created_at: createdAt,
+        });
+        if (error) throw error;
+        return { ok: true, mode: "online", record: data };
+      } catch (e) {
+        console.warn("فشل الحفظ المباشر، سيتم الحفظ محليًا:", e);
+        // نكمل إلى الحفظ الأوفلاين بدل إظهار خطأ للمستخدم
+      }
+    }
+
+    // وضع عدم الاتصال: نحفظ الصورة كـ base64 وننتظر المزامنة
+    const base64 = await window.Storage.blobToBase64(imageBlob);
+    const entry = await window.Sync.queueVerification({
+      user_id: targetUserId,
+      group_id: groupId,
+      shift_id: shiftId,
+      imageBase64: base64,
+      created_at: createdAt,
+    });
+    return { ok: true, mode: "offline", record: entry };
+  }
+
+  window.Verification = {
+    openCamera,
+    closeCamera,
+    captureFrame,
+    verifyUser,
+    toggleFacing,
+  };
+})();
+
+
+/* ===== admin.js ===== */
+/*
+  admin.js
+  --------
+  صلاحيات المشرف: إدارة المستخدمين، المجموعات، مراجعة التوثيق، الإحصائيات.
+  كل عملية إدارية تُسجَّل في admin_logs عبر DB.logAdminAction.
+*/
+
+(function () {
+  async function log(actorId, action, targetUserId, extra) {
+    await window.DB.logAdminAction({
+      actor_id: actorId,
+      action,
+      target_user_id: targetUserId || null,
+      details: extra ? JSON.stringify(extra) : null,
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  async function addUserManually(actorId, { name, phone, shiftId, groupId }) {
+    // إنشاء مستخدم من لوحة المشرف يتطلب استدعاء Auth Admin API من الخادم
+    // (service_role) — لا يمكن فعله بأمان من المتصفح. هنا نجهز الصف في
+    // profiles إن كان الحساب أُنشئ مسبقًا عبر شاشة التسجيل العادية،
+    // ونترك ربط المستخدم الجديد بالنوبة/المجموعة كخطوة لاحقة.
+    return {
+      error:
+        "إنشاء حساب كامل (بريد/جوال + كلمة مرور) من لوحة المشرف يحتاج صلاحية خادم (service_role) لا نضعها في المتصفح لأسباب أمنية. الحل: يسجّل المستخدم نفسه من شاشة التسجيل، ثم يقوم المشرف بنقله إلى المجموعة المناسبة من هنا.",
+    };
+  }
+
+  async function editUser(actorId, userId, patch) {
+    const res = await window.DB.updateProfile(userId, patch);
+    if (!res.error) await log(actorId, "edit_user", userId, patch);
+    return res;
+  }
+
+  async function setActive(actorId, userId, active) {
+    const res = await window.DB.setUserActive(userId, active);
+    if (!res.error) await log(actorId, active ? "activate_user" : "deactivate_user", userId);
+    return res;
+  }
+
+  async function moveUser(actorId, userId, shiftId, groupId) {
+    const res = await window.DB.moveUser(userId, shiftId, groupId);
+    if (!res.error) await log(actorId, "move_user", userId, { shiftId, groupId });
+    return res;
+  }
+
+  async function renameGroup(actorId, groupId, name) {
+    const res = await window.DB.updateGroup(groupId, { name });
+    if (!res.error) await log(actorId, "rename_group", null, { groupId, name });
+    return res;
+  }
+
+  async function toggleGroup(actorId, groupId, active) {
+    const res = await window.DB.updateGroup(groupId, { active });
+    if (!res.error) await log(actorId, active ? "open_group" : "close_group", null, { groupId });
+    return res;
+  }
+
+  async function createGroup(actorId, shiftId, name) {
+    const res = await window.DB.createGroup(shiftId, name);
+    if (!res.error) await log(actorId, "create_group", null, { shiftId, name });
+    return res;
+  }
+
+  async function createShift(actorId, name) {
+    const res = await window.DB.createShift(name);
+    if (!res.error) await log(actorId, "create_shift", null, { name });
+    return res;
+  }
+
+  async function renameShift(actorId, shiftId, name) {
+    const res = await window.DB.updateShift(shiftId, { name });
+    if (!res.error) await log(actorId, "rename_shift", null, { shiftId, name });
+    return res;
+  }
+
+  async function toggleShift(actorId, shiftId, active) {
+    const res = await window.DB.updateShift(shiftId, { active });
+    if (!res.error) await log(actorId, active ? "open_shift" : "close_shift", null, { shiftId });
+    return res;
+  }
+
+  async function getLogs(limit = 200) {
+    return await window.DB.getAdminLogs(limit);
+  }
+
+  async function requestReVerification(actorId, userId) {
+    // نضع علامة عبر ملاحظة في آخر توثيق أو عبر جدول منفصل مستقبلًا.
+    // هنا نكتفي بتسجيلها في السجل الإداري، والواجهة تعرضها كطلب معلّق.
+    await log(actorId, "request_reverification", userId);
+    return { ok: true };
+  }
+
+  async function computeStats(shiftId, groupId) {
+    const filters = {};
+    if (shiftId) filters.shiftId = shiftId;
+    if (groupId) filters.groupId = groupId;
+
+    const [members, verifications] = await Promise.all([
+      groupId ? window.DB.getMembers(groupId) : window.DB.getAllUsers(),
+      window.DB.getVerifications({ ...filters, limit: 1000 }),
+    ]);
+
+    const verifiedIds = new Set(verifications.map((v) => v.user_id));
+    const total = members.length;
+    const verified = members.filter((m) => verifiedIds.has(m.id)).length;
+    const lastVerification = verifications[0]?.created_at || null;
+
+    return {
+      total,
+      verified,
+      notVerified: total - verified,
+      rate: total ? Math.round((verified / total) * 100) : 0,
+      lastVerification,
+    };
+  }
+
+  window.Admin = {
+    addUserManually,
+    editUser,
+    setActive,
+    moveUser,
+    renameGroup,
+    toggleGroup,
+    createGroup,
+    createShift,
+    renameShift,
+    toggleShift,
+    requestReVerification,
+    computeStats,
+    getLogs,
+    log,
+  };
+})();
+
+
+/* ===== developer.js ===== */
+/*
+  developer.js
+  ------------
+  لوحة المطور. الحماية على 3 طبقات كما طُلب:
+  1) Developer UI Lock: رمز الدخول (158512) لإظهار اللوحة في الواجهة فقط.
+  2) role = 'developer' في جدول profiles.
+  3) RLS في Supabase تمنع أي استخدام غير مصرّح به حتى لو تجاوز أحد الطبقة 1.
+  الرمز وحده لا يعطي أي صلاحية حقيقية على البيانات — فقط يظهر/يخفي الشاشة.
+*/
+
+(function () {
+  const UNLOCK_KEY = "dev_ui_unlocked_v1";
+
+  function unlockWithCode(code) {
+    const expected = (window.SUPABASE_CONFIG || {}).DEVELOPER_ACCESS_CODE || "158512";
+    if (String(code) === String(expected)) {
+      sessionStorage.setItem(UNLOCK_KEY, "1");
+      return true;
+    }
+    return false;
+  }
+
+  function isUIUnlocked() {
+    return sessionStorage.getItem(UNLOCK_KEY) === "1";
+  }
+
+  function lockUI() {
+    sessionStorage.removeItem(UNLOCK_KEY);
+  }
+
+  function canAccess(profile) {
+    return !!profile && profile.role === "developer" && isUIUnlocked();
+  }
+
+  async function getSystemStatus() {
+    const online = navigator.onLine;
+    const dbOk = await window.DB.ping();
+    const queue = await window.Sync.getQueue();
+    return {
+      online,
+      dbOk,
+      pendingSync: queue.length,
+      supabaseConfigured: window.DB.isReady(),
+    };
+  }
+
+  async function forceSync() {
+    await window.Sync.syncPending();
+    return await getSystemStatus();
+  }
+
+  async function promoteToSupervisor(actorId, userId) {
+    const res = await window.DB.setUserRole(userId, "supervisor");
+    if (!res.error) await window.Admin.log(actorId, "promote_supervisor", userId);
+    return res;
+  }
+
+  async function demoteToUser(actorId, userId) {
+    const res = await window.DB.setUserRole(userId, "user");
+    if (!res.error) await window.Admin.log(actorId, "demote_to_user", userId);
+    return res;
+  }
+
+  window.Developer = {
+    unlockWithCode,
+    isUIUnlocked,
+    lockUI,
+    canAccess,
+    getSystemStatus,
+    forceSync,
+    promoteToSupervisor,
+    demoteToUser,
+  };
+})();
+
+
+/* ===== app.js ===== */
+/*
+  app.js
+  ------
+  المنسّق الرئيسي: التنقل بين الشاشات، إدارة الحالة، وربط كل الوحدات
+  الأخرى (auth, verification, admin, developer, sync) بالواجهة.
+  لا يحتوي هذا الملف على أي منطق اتصال مباشر بـ Supabase — كل ذلك في
+  database.js — حتى تبقى المسؤوليات منفصلة ويسهل الصيانة.
+*/
+
+(function () {
+  const root = document.getElementById("app");
+
+  const state = {
+    user: null,
+    page: "loading",
+    shifts: [],
+    groups: [],
+    selectedShiftId: null,
+    selectedGroupId: null,
+    members: [],
+    logFilters: {},
+    logMineOnly: false,
+    connection: navigator.onLine ? "online" : "offline",
+    toast: null,
+  };
+
+  // ---------------- أدوات مساعدة للواجهة ----------------
+  function el(html) {
+    const t = document.createElement("template");
+    t.innerHTML = html.trim();
+    return t.content.firstElementChild;
+  }
+
+  function showToast(msg, kind = "info") {
+    const holder = document.getElementById("toast-holder");
+    const node = el(`<div class="toast toast-${kind}">${escapeHtml(msg)}</div>`);
+    holder.appendChild(node);
+    requestAnimationFrame(() => node.classList.add("show"));
+    setTimeout(() => {
+      node.classList.remove("show");
+      setTimeout(() => node.remove(), 300);
+    }, 3200);
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
+    } catch {
+      return iso;
+    }
+  }
+
+  function setPage(page) {
+    state.page = page;
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  // ---------------- التمهيد ----------------
+  async function boot() {
+    watchConnection();
+    try {
+      const user = await window.Auth.getSessionUser();
+      if (user) {
+        state.user = user;
+        await loadShiftsAndGroups();
+        setPage("home");
+      } else {
+        setPage("login");
+      }
+    } catch (e) {
+      console.error(e);
+      setPage("login");
+    }
+  }
+
+  function watchConnection() {
+    const update = (status) => {
+      state.connection = navigator.onLine ? "online" : "offline";
+      if (status?.state === "syncing") state.connection = "syncing";
+      if (status?.state === "done") state.connection = "online";
+      renderConnectionBadge();
+    };
+    window.addEventListener("online", () => update());
+    window.addEventListener("offline", () => update());
+    if (window.Sync) window.Sync.onStatusChange(update);
+  }
+
+  function renderConnectionBadge() {
+    const badge = document.getElementById("conn-badge");
+    if (!badge) return;
+    const map = {
+      online: ["🟢", "متصل"],
+      offline: ["🟠", "غير متصل — سيتم الحفظ محليًا"],
+      syncing: ["🔵", "جارِ المزامنة..."],
+    };
+    const [dot, label] = map[state.connection] || map.online;
+    badge.textContent = `${dot} ${label}`;
+  }
+
+  async function loadShiftsAndGroups() {
+    state.shifts = await window.DB.getShifts();
+    const allGroups = [];
+    for (const s of state.shifts) {
+      const gs = await window.DB.getGroups(s.id);
+      allGroups.push(...gs);
+    }
+    state.groups = allGroups;
+  }
+
+  function groupsOf(shiftId) {
+    return state.groups.filter((g) => g.shift_id === shiftId);
+  }
+
+  // ---------------- التصيير الرئيسي ----------------
+  function render() {
+    root.innerHTML = "";
+    document.getElementById("bottom-nav").style.display =
+      ["home", "log", "settings"].includes(state.page) && state.user ? "flex" : "none";
+
+    const pages = {
+      loading: renderLoading,
+      login: renderLogin,
+      register: renderRegister,
+      home: renderHome,
+      group: renderGroup,
+      verify: renderVerify,
+      log: renderLog,
+      settings: renderSettings,
+      admin: renderAdmin,
+      developer: renderDeveloper,
+      stats: renderStats,
+    };
+    (pages[state.page] || renderHome)();
+    renderConnectionBadge();
+    highlightNav();
+  }
+
+  function highlightNav() {
+    document.querySelectorAll("#bottom-nav button").forEach((b) => {
+      b.classList.toggle("active", b.dataset.page === state.page);
+    });
+  }
+
+  // ---------------- شاشة التحميل ----------------
+  function renderLoading() {
+    root.appendChild(el(`
+      <div class="screen center">
+        <div class="spinner"></div>
+        <p class="muted">جارِ التحميل...</p>
+      </div>
+    `));
+  }
+
+  // ---------------- تسجيل الدخول ----------------
+  function renderLogin() {
+    root.appendChild(el(`
+      <div class="screen auth-screen">
+        <div class="auth-card">
+          <h1 class="brand">🚗 نظام النوبات</h1>
+          <p class="muted">تسجيل الدخول للمتابعة</p>
+          <form id="login-form" class="form">
+            <label>رقم الجوال
+              <input type="tel" name="phone" placeholder="+9665xxxxxxxx" required />
+            </label>
+            <label>كلمة المرور
+              <input type="password" name="password" placeholder="••••••••" required minlength="6" />
+            </label>
+            <button class="btn btn-primary" type="submit">دخول</button>
+          </form>
+          <p class="switch-link">ليس لديك حساب؟ <a href="#" id="go-register">إنشاء حساب جديد</a></p>
+          <div id="login-error" class="error-box hidden"></div>
+        </div>
+      </div>
+    `));
+
+    document.getElementById("go-register").onclick = (e) => {
+      e.preventDefault();
+      setPage("register");
+    };
+
+    document.getElementById("login-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector("button");
+      btn.disabled = true;
+      btn.textContent = "جارِ الدخول...";
+      const res = await window.Auth.signIn({
+        phone: fd.get("phone"),
+        password: fd.get("password"),
+      });
+      btn.disabled = false;
+      btn.textContent = "دخول";
+      if (res.error) {
+        const box = document.getElementById("login-error");
+        box.textContent = res.error;
+        box.classList.remove("hidden");
+        return;
+      }
+      state.user = await window.Auth.getSessionUser();
+      await loadShiftsAndGroups();
+      setPage("home");
+    };
+  }
+
+  // ---------------- إنشاء حساب ----------------
+  function renderRegister() {
+    root.appendChild(el(`
+      <div class="screen auth-screen">
+        <div class="auth-card">
+          <h1 class="brand">🚗 إنشاء حساب</h1>
+          <p class="muted">بدون رسائل SMS — رقم جوال وكلمة مرور فقط</p>
+          <form id="register-form" class="form">
+            <label>الاسم الكامل
+              <input type="text" name="name" required />
+            </label>
+            <label>رقم الجوال
+              <input type="tel" name="phone" placeholder="+9665xxxxxxxx" required />
+            </label>
+            <label>كلمة المرور
+              <input type="password" name="password" required minlength="6" />
+            </label>
+            <label>تأكيد كلمة المرور
+              <input type="password" name="password2" required minlength="6" />
+            </label>
+            <button class="btn btn-primary" type="submit">إنشاء الحساب والدخول</button>
+          </form>
+          <p class="switch-link">لديك حساب؟ <a href="#" id="go-login">تسجيل الدخول</a></p>
+          <div id="register-error" class="error-box hidden"></div>
+        </div>
+      </div>
+    `));
+
+    document.getElementById("go-login").onclick = (e) => {
+      e.preventDefault();
+      setPage("login");
+    };
+
+    document.getElementById("register-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const box = document.getElementById("register-error");
+      box.classList.add("hidden");
+
+      if (fd.get("password") !== fd.get("password2")) {
+        box.textContent = "كلمتا المرور غير متطابقتين.";
+        box.classList.remove("hidden");
+        return;
+      }
+
+      const btn = e.target.querySelector("button");
+      btn.disabled = true;
+      btn.textContent = "جارِ الإنشاء...";
+      const res = await window.Auth.signUp({
+        name: fd.get("name"),
+        phone: fd.get("phone"),
+        password: fd.get("password"),
+      });
+      btn.disabled = false;
+      btn.textContent = "إنشاء الحساب والدخول";
+
+      if (res.error) {
+        box.textContent = res.error;
+        box.classList.remove("hidden");
+        return;
+      }
+
+      const signInRes = await window.Auth.signIn({
+        phone: fd.get("phone"),
+        password: fd.get("password"),
+      });
+      if (signInRes.error) {
+        box.textContent = signInRes.error;
+        box.classList.remove("hidden");
+        return;
+      }
+      state.user = await window.Auth.getSessionUser();
+      await loadShiftsAndGroups();
+      showToast("تم إنشاء الحساب بنجاح ✅");
+      setPage("home");
+    };
+  }
+
+  // ---------------- الرئيسية ----------------
+  function renderHome() {
+    const name = state.user?.name || "مستخدم";
+    const shiftsHtml = state.shifts.length
+      ? state.shifts.map((s) => `
+        <section class="shift-block">
+          <h3 class="shift-title">${escapeHtml(s.name)}</h3>
+          <div class="group-grid">
+            ${groupsOf(s.id).map((g) => `
+              <button class="group-card ${g.active === false ? "closed" : ""}" data-shift="${s.id}" data-group="${g.id}" ${g.active === false ? 'data-closed="1"' : ""}>
+                <span class="group-icon">${g.active === false ? "🔒" : "👥"}</span>
+                <span class="group-name">${escapeHtml(g.name)}</span>
+                ${g.active === false ? '<span class="badge badge-off">مغلقة</span>' : ""}
+              </button>
+            `).join("") || `<p class="muted small">لا توجد مجموعات بعد</p>`}
+          </div>
+        </section>
+      `).join("")
+      : `<p class="muted center-text">لا توجد نوبات بعد. ${
+          state.user?.role !== "user" ? "يمكنك إضافتها من لوحة الإدارة." : ""
+        }</p>`;
+
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="home-header">
+          <div>
+            <p class="greeting">مرحبًا يا ${escapeHtml(name)} 👋</p>
+            <p id="conn-badge" class="conn-badge"></p>
+          </div>
+          <div class="avatar">${escapeHtml(name[0] || "؟")}</div>
+        </header>
+
+        ${shiftsHtml}
+
+        <button id="verify-now" class="btn btn-primary btn-block big-btn">📷 توثيق الآن</button>
+        <button id="my-log-link" class="btn btn-secondary btn-block">📄 توثيقاتي</button>
+        <button id="stats-link" class="btn btn-secondary btn-block">📊 الإحصائيات</button>
+      </div>
+    `));
+
+    root.querySelectorAll(".group-card").forEach((btn) => {
+      btn.onclick = () => {
+        if (btn.dataset.closed) {
+          showToast("🔒 هذه المجموعة مغلقة حاليًا من قبل الإدارة", "error");
+          return;
+        }
+        state.selectedShiftId = btn.dataset.shift;
+        state.selectedGroupId = btn.dataset.group;
+        setPage("group");
+      };
+    });
+
+    document.getElementById("my-log-link").onclick = () => {
+      state.logMineOnly = true;
+      setPage("log");
+    };
+
+    document.getElementById("verify-now").onclick = () => {
+      if (!state.selectedGroupId && state.groups.length) {
+        state.selectedShiftId = state.groups[0].shift_id;
+        state.selectedGroupId = state.groups[0].id;
+      }
+      setPage("verify");
+    };
+
+    document.getElementById("stats-link").onclick = () => {
+      state.selectedShiftId = null;
+      state.selectedGroupId = null;
+      setPage("stats");
+    };
+  }
+
+  // ---------------- صفحة المجموعة ----------------
+  async function renderGroup() {
+    const group = state.groups.find((g) => g.id === state.selectedGroupId);
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="page-header">
+          <button class="icon-btn" id="back-home">→</button>
+          <h2>${escapeHtml(group?.name || "المجموعة")}</h2>
+        </header>
+        <div id="members-list" class="card-list"><p class="muted center-text">جارِ التحميل...</p></div>
+        <button id="verify-here" class="btn btn-primary btn-block">📷 توثيق في هذه المجموعة</button>
+      </div>
+    `));
+
+    document.getElementById("back-home").onclick = () => setPage("home");
+    document.getElementById("verify-here").onclick = () => setPage("verify");
+
+    const members = await window.DB.getMembers(state.selectedGroupId);
+    const list = document.getElementById("members-list");
+    if (!members.length) {
+      list.innerHTML = `<p class="muted center-text">لا يوجد أعضاء في هذه المجموعة</p>`;
+      return;
+    }
+    list.innerHTML = members.map((m) => `
+      <div class="member-row">
+        <span class="member-name">${escapeHtml(m.name)}</span>
+        <span class="badge ${m.active ? "badge-ok" : "badge-off"}">${m.active ? "نشط" : "معطّل"}</span>
+      </div>
+    `).join("");
+  }
+
+  // ---------------- شاشة التوثيق (الكاميرا) ----------------
+  function renderVerify() {
+    const group = state.groups.find((g) => g.id === state.selectedGroupId);
+    const shift = state.shifts.find((s) => s.id === state.selectedShiftId);
+
+    if (group && group.active === false) {
+      root.appendChild(el(`
+        <div class="screen center">
+          <p class="muted">🔒 هذه المجموعة مغلقة حاليًا من قبل الإدارة.</p>
+          <button class="btn btn-secondary" id="back-closed">رجوع</button>
+        </div>
+      `));
+      document.getElementById("back-closed").onclick = () => setPage("home");
+      return;
+    }
+
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="page-header">
+          <button class="icon-btn" id="back">→</button>
+          <h2>توثيق</h2>
+        </header>
+
+        <p class="muted center-text">
+          ${group ? `${escapeHtml(shift?.name || "")} • ${escapeHtml(group.name)}` : "اختر مجموعة أولًا"}
+        </p>
+
+        <div class="camera-wrap">
+          <video id="cam-video" playsinline autoplay muted></video>
+          <img id="cam-preview" class="hidden" alt="معاينة الصورة" />
+          <canvas id="cam-canvas" class="hidden"></canvas>
+        </div>
+
+        <div id="cam-error" class="error-box hidden"></div>
+
+        <div id="cam-live-actions" class="cam-actions">
+          <button id="switch-cam-btn" class="btn btn-secondary btn-block">🔄 تبديل الكاميرا</button>
+          <button id="capture-btn" class="btn btn-primary btn-block big-btn">📷 التقاط</button>
+        </div>
+        <div id="cam-preview-actions" class="cam-actions hidden">
+          <button id="retake-btn" class="btn btn-secondary btn-block">↩️ إعادة الالتقاط</button>
+          <button id="confirm-btn" class="btn btn-primary btn-block big-btn">✅ تأكيد وحفظ</button>
+        </div>
+      </div>
+    `));
+
+    let capturedBlob = null;
+    const video = document.getElementById("cam-video");
+    const previewImg = document.getElementById("cam-preview");
+
+    document.getElementById("back").onclick = () => {
+      window.Verification.closeCamera();
+      setPage(state.selectedGroupId ? "group" : "home");
+    };
+
+    function startCamera(facing) {
+      window.Verification.openCamera(video, facing).then((res) => {
+        if (!res.ok) {
+          document.getElementById("cam-error").textContent = res.error;
+          document.getElementById("cam-error").classList.remove("hidden");
+        } else {
+          document.getElementById("cam-error").classList.add("hidden");
+        }
+      });
+    }
+    startCamera();
+
+    document.getElementById("switch-cam-btn").onclick = () => {
+      startCamera(window.Verification.toggleFacing());
+    };
+
+    document.getElementById("capture-btn").onclick = async () => {
+      capturedBlob = await window.Verification.captureFrame(video);
+      previewImg.src = URL.createObjectURL(capturedBlob);
+      video.classList.add("hidden");
+      previewImg.classList.remove("hidden");
+      document.getElementById("cam-live-actions").classList.add("hidden");
+      document.getElementById("cam-preview-actions").classList.remove("hidden");
+      window.Verification.closeCamera();
+    };
+
+    document.getElementById("retake-btn").onclick = () => {
+      capturedBlob = null;
+      previewImg.classList.add("hidden");
+      video.classList.remove("hidden");
+      document.getElementById("cam-preview-actions").classList.add("hidden");
+      document.getElementById("cam-live-actions").classList.remove("hidden");
+      startCamera();
+    };
+
+    document.getElementById("confirm-btn").onclick = async () => {
+      if (!capturedBlob) return;
+      const btn = document.getElementById("confirm-btn");
+      btn.disabled = true;
+      btn.textContent = "جارِ الحفظ...";
+      try {
+        const result = await window.Verification.verifyUser({
+          targetUserId: state.user.id,
+          groupId: state.selectedGroupId,
+          shiftId: state.selectedShiftId,
+          imageBlob: capturedBlob,
+        });
+        if (result.mode === "offline") {
+          showToast("📱 تم الحفظ محليًا — بانتظار المزامنة 🟠");
+        } else {
+          showToast("✅ تم التوثيق بنجاح");
+        }
+        setPage("home");
+      } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = "✅ تأكيد وحفظ";
+        showToast("حدث خطأ أثناء الحفظ، أعد المحاولة", "error");
+      }
+    };
+  }
+
+  // ---------------- السجل ----------------
+  async function renderLog() {
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="page-header"><h2>📋 السجل</h2></header>
+
+        <label class="switch-row" style="margin-bottom:12px;">
+          <span>عرض توثيقاتي فقط</span>
+          <input type="checkbox" id="f-mine" ${state.logMineOnly ? "checked" : ""} />
+        </label>
+
+        <div class="filter-row">
+          <select id="f-shift"><option value="">كل النوبات</option>
+            ${state.shifts.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("")}
+          </select>
+          <select id="f-group"><option value="">كل المجموعات</option>
+            ${state.groups.map((g) => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join("")}
+          </select>
+          <input id="f-search" type="search" placeholder="🔍 بحث بالاسم" />
+        </div>
+
+        <div id="log-list" class="card-list"><p class="muted center-text">جارِ التحميل...</p></div>
+      </div>
+    `));
+
+    async function reload() {
+      state.logMineOnly = document.getElementById("f-mine").checked;
+      const filters = {
+        shiftId: document.getElementById("f-shift").value || undefined,
+        groupId: document.getElementById("f-group").value || undefined,
+        userId: state.logMineOnly ? state.user.id : undefined,
+      };
+      const rows = await window.DB.getVerifications(filters);
+      const search = document.getElementById("f-search").value.trim().toLowerCase();
+      const filtered = search
+        ? rows.filter((r) => (r.profiles?.name || "").toLowerCase().includes(search))
+        : rows;
+
+      const list = document.getElementById("log-list");
+      if (!filtered.length) {
+        list.innerHTML = `<p class="muted center-text">لا توجد عمليات توثيق مطابقة</p>`;
+        return;
+      }
+      list.innerHTML = filtered.map((r) => `
+        <div class="log-row">
+          ${r.image_url ? `<img class="log-thumb" src="${r.image_url}" alt="" loading="lazy" />` : `<div class="log-thumb placeholder">📷</div>`}
+          <div class="log-info">
+            <p class="log-name">${escapeHtml(r.profiles?.name || "مستخدم")}</p>
+            <p class="log-meta muted small">${fmtDate(r.created_at)}</p>
+          </div>
+          <span class="badge badge-ok">موثّق</span>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("f-shift").onchange = reload;
+    document.getElementById("f-group").onchange = reload;
+    document.getElementById("f-mine").onchange = reload;
+    document.getElementById("f-search").oninput = debounce(reload, 300);
+    reload();
+  }
+
+  function debounce(fn, ms) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), ms);
+    };
+  }
+
+  // ---------------- الإعدادات ----------------
+  function renderSettings() {
+    const u = state.user;
+    const isSupervisor = u?.role === "supervisor" || u?.role === "developer";
+    const isDeveloper = u?.role === "developer";
+
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="page-header"><h2>⚙️ الإعدادات</h2></header>
+
+        <section class="card">
+          <h3>الملف الشخصي</h3>
+          <form id="profile-form" class="form">
+            <label>الاسم <input type="text" name="name" value="${escapeHtml(u?.name || "")}" /></label>
+            <label>رقم الجوال <input type="text" value="${escapeHtml(u?.phone || "")}" disabled /></label>
+            <button class="btn btn-secondary" type="submit">حفظ التعديلات</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h3>تغيير كلمة المرور</h3>
+          <form id="password-form" class="form">
+            <label>كلمة المرور الجديدة <input type="password" name="password" minlength="6" required /></label>
+            <label>تأكيد كلمة المرور <input type="password" name="password2" minlength="6" required /></label>
+            <button class="btn btn-secondary" type="submit">تحديث كلمة المرور</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h3>الوضع الليلي</h3>
+          <label class="switch-row">
+            <span>تفعيل الوضع الليلي</span>
+            <input type="checkbox" id="dark-toggle" ${localStorage.getItem("dark") === "1" ? "checked" : ""} />
+          </label>
+        </section>
+
+        <section class="card">
+          <h3>المزامنة</h3>
+          <p id="sync-info" class="muted small">جارِ الفحص...</p>
+          <button class="btn btn-secondary btn-block" id="sync-now-btn">🔄 مزامنة الآن</button>
+        </section>
+
+        <section class="card">
+          <h3>معلومات التطبيق</h3>
+          <p class="muted small">نظام إدارة النوبات والتوثيق — الإصدار 1.1</p>
+          <p class="muted small">الاتصال بقاعدة البيانات: ${window.DB.isReady() ? "🟢 مضبوط" : "🔴 غير مضبوط"}</p>
+        </section>
+
+        ${isSupervisor ? `
+        <section class="card">
+          <h3>🛡️ لوحة المشرف</h3>
+          <button class="btn btn-secondary btn-block" id="go-admin">فتح لوحة المشرف</button>
+        </section>` : ""}
+
+        ${isDeveloper ? `
+        <section class="card">
+          <h3>👑 لوحة المطور</h3>
+          <button class="btn btn-secondary btn-block" id="go-dev">فتح لوحة المطور</button>
+        </section>` : ""}
+
+        <button id="logout-btn" class="btn btn-danger btn-block">تسجيل الخروج</button>
+      </div>
+    `));
+
+    document.getElementById("profile-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      await window.DB.updateProfile(u.id, { name: fd.get("name") });
+      state.user.name = fd.get("name");
+      showToast("تم حفظ التعديلات ✅");
+    };
+
+    document.getElementById("password-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      if (fd.get("password") !== fd.get("password2")) {
+        showToast("كلمتا المرور غير متطابقتين", "error");
+        return;
+      }
+      const client = window.DB.client();
+      if (!client) {
+        showToast("لا يوجد اتصال بقاعدة البيانات", "error");
+        return;
+      }
+      const { error } = await client.auth.updateUser({ password: fd.get("password") });
+      if (error) {
+        showToast("تعذر تحديث كلمة المرور: " + error.message, "error");
+      } else {
+        showToast("تم تحديث كلمة المرور ✅");
+        e.target.reset();
+      }
+    };
+
+    document.getElementById("dark-toggle").onchange = (e) => {
+      document.documentElement.classList.toggle("dark", e.target.checked);
+      localStorage.setItem("dark", e.target.checked ? "1" : "0");
+    };
+
+    window.Sync.getQueue().then((q) => {
+      const info = document.getElementById("sync-info");
+      if (info) {
+        info.textContent = q.length
+          ? `🟠 ${q.length} عملية بانتظار المزامنة`
+          : "🟢 كل شي متزامن";
+      }
+    });
+    document.getElementById("sync-now-btn").onclick = async () => {
+      showToast("جارِ المزامنة...");
+      await window.Sync.syncPending();
+      renderSettings();
+    };
+
+    if (isSupervisor) {
+      document.getElementById("go-admin").onclick = () => setPage("admin");
+    }
+    if (isDeveloper) {
+      document.getElementById("go-dev").onclick = () => setPage("developer");
+    }
+
+    document.getElementById("logout-btn").onclick = async () => {
+      await window.Auth.signOut();
+      state.user = null;
+      setPage("login");
+    };
+  }
+
+  // ---------------- لوحة المشرف ----------------
+  let adminTab = "users";
+
+  async function renderAdmin() {
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="page-header">
+          <button class="icon-btn" id="back-settings">→</button>
+          <h2>🛡️ لوحة المشرف</h2>
+        </header>
+        <div id="admin-stats" class="stats-grid"></div>
+        <div class="tab-row">
+          <button class="tab-btn" data-tab="users">👤 المستخدمون</button>
+          <button class="tab-btn" data-tab="groups">👥 المجموعات</button>
+          <button class="tab-btn" data-tab="verif">📷 التوثيق</button>
+          <button class="tab-btn" data-tab="logs">📜 السجل الإداري</button>
+        </div>
+        <div id="admin-body"><p class="muted center-text">جارِ التحميل...</p></div>
+      </div>
+    `));
+
+    document.getElementById("back-settings").onclick = () => setPage("settings");
+
+    const stats = await window.Admin.computeStats();
+    document.getElementById("admin-stats").innerHTML = statsCardsHtml(stats);
+
+    root.querySelectorAll(".tab-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.tab === adminTab);
+      b.onclick = () => {
+        adminTab = b.dataset.tab;
+        renderAdmin();
+      };
+    });
+
+    const body = document.getElementById("admin-body");
+    if (adminTab === "users") await renderAdminUsers(body);
+    else if (adminTab === "groups") await renderAdminGroups(body);
+    else if (adminTab === "verif") await renderAdminVerifications(body);
+    else if (adminTab === "logs") await renderAdminLogs(body);
+  }
+
+  let adminUserSearch = "";
+
+  async function renderAdminUsers(body) {
+    const users = await window.DB.getAllUsers();
+    const filtered = adminUserSearch
+      ? users.filter(
+          (u) =>
+            (u.name || "").toLowerCase().includes(adminUserSearch) ||
+            (u.phone || "").includes(adminUserSearch)
+        )
+      : users;
+
+    body.innerHTML = `
+      <input id="admin-user-search" type="search" placeholder="🔍 بحث بالاسم أو الجوال"
+        value="${escapeHtml(adminUserSearch)}"
+        style="width:100%;margin-bottom:10px;background:var(--ink-2);border:1px solid var(--ink-3);color:var(--paper);padding:10px;border-radius:var(--radius-sm);" />
+      <div class="card-list">${filtered.map((u) => `
+      <div class="member-row wrap">
+        <div>
+          <p class="member-name">${escapeHtml(u.name || "بدون اسم")}</p>
+          <p class="muted small">${escapeHtml(u.phone || "")} • ${escapeHtml(u.role || "user")}</p>
+        </div>
+        <div class="row-actions">
+          <select class="chip-select" data-user="${u.id}" data-kind="group">
+            <option value="">نقل لمجموعة...</option>
+            ${state.groups.map((g) => `<option value="${g.id}" ${g.id === u.group_id ? "selected" : ""}>${escapeHtml(shiftGroupLabel(g))}</option>`).join("")}
+          </select>
+          <button class="chip-btn" data-action="clear-group" data-id="${u.id}" ${u.group_id ? "" : "disabled"}>إزالة من المجموعة</button>
+          <button class="chip-btn" data-action="toggle" data-id="${u.id}" data-active="${u.active}">
+            ${u.active ? "تعطيل" : "تفعيل"}
+          </button>
+        </div>
+      </div>
+    `).join("") || `<p class="muted center-text">لا توجد نتائج</p>`}</div>`;
+
+    document.getElementById("admin-user-search").oninput = debounce((e) => {
+      adminUserSearch = e.target.value.trim().toLowerCase();
+      renderAdminUsers(body);
+    }, 250);
+
+    body.querySelectorAll('[data-action="toggle"]').forEach((btn) => {
+      btn.onclick = async () => {
+        const active = btn.dataset.active === "true";
+        await window.Admin.setActive(state.user.id, btn.dataset.id, !active);
+        showToast("تم تحديث الحالة");
+        renderAdmin();
+      };
+    });
+
+    body.querySelectorAll('[data-action="clear-group"]').forEach((btn) => {
+      btn.onclick = async () => {
+        await window.Admin.moveUser(state.user.id, btn.dataset.id, null, null);
+        showToast("تمت إزالة المستخدم من المجموعة");
+        renderAdmin();
+      };
+    });
+
+    body.querySelectorAll('[data-kind="group"]').forEach((sel) => {
+      sel.onchange = async () => {
+        const group = state.groups.find((g) => g.id === sel.value);
+        if (!group) return;
+        await window.Admin.moveUser(state.user.id, sel.dataset.user, group.shift_id, group.id);
+        showToast("تم نقل المستخدم");
+        renderAdmin();
+      };
+    });
+  }
+
+  function shiftGroupLabel(g) {
+    const shift = state.shifts.find((s) => s.id === g.shift_id);
+    return `${shift ? shift.name : ""} - ${g.name}`;
+  }
+
+  async function renderAdminGroups(body) {
+    body.innerHTML = state.shifts.map((s) => `
+      <section class="card">
+        <h3>${escapeHtml(s.name)}</h3>
+        <div class="card-list">
+          ${groupsOf(s.id).map((g) => `
+            <div class="member-row">
+              <input class="inline-edit" data-group="${g.id}" value="${escapeHtml(g.name)}" />
+              <div class="row-actions">
+                <button class="chip-btn" data-toggle-group="${g.id}" data-active="${g.active}">
+                  ${g.active ? "إغلاق" : "فتح"}
+                </button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <button class="btn btn-secondary btn-block" data-add-group="${s.id}">➕ إضافة مجموعة</button>
+      </section>
+    `).join("") + `
+      <section class="card">
+        <h3>إضافة نوبة جديدة</h3>
+        <form id="new-shift-form" class="form">
+          <input type="text" name="name" placeholder="اسم النوبة" required />
+          <button class="btn btn-primary" type="submit">➕ إضافة</button>
+        </form>
+      </section>
+    `;
+
+    body.querySelectorAll(".inline-edit").forEach((inp) => {
+      inp.onchange = async () => {
+        await window.Admin.renameGroup(state.user.id, inp.dataset.group, inp.value.trim());
+        showToast("تم حفظ الاسم");
+        await loadShiftsAndGroups();
+      };
+    });
+
+    body.querySelectorAll("[data-toggle-group]").forEach((btn) => {
+      btn.onclick = async () => {
+        const active = btn.dataset.active === "true";
+        await window.Admin.toggleGroup(state.user.id, btn.dataset.toggleGroup, !active);
+        showToast("تم التحديث");
+        await loadShiftsAndGroups();
+        renderAdmin();
+      };
+    });
+
+    body.querySelectorAll("[data-add-group]").forEach((btn) => {
+      btn.onclick = async () => {
+        const name = prompt("اسم المجموعة الجديدة:");
+        if (!name) return;
+        await window.Admin.createGroup(state.user.id, btn.dataset.addGroup, name.trim());
+        showToast("تمت الإضافة");
+        await loadShiftsAndGroups();
+        renderAdmin();
+      };
+    });
+
+    const newShiftForm = document.getElementById("new-shift-form");
+    if (newShiftForm) {
+      newShiftForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = new FormData(e.target).get("name");
+        await window.Admin.createShift(state.user.id, name);
+        showToast("تمت إضافة النوبة");
+        await loadShiftsAndGroups();
+        renderAdmin();
+      };
+    }
+  }
+
+  async function renderAdminVerifications(body) {
+    const rows = await window.DB.getVerifications({ limit: 100 });
+    if (!rows.length) {
+      body.innerHTML = `<p class="muted center-text">لا توجد عمليات توثيق بعد</p>`;
+      return;
+    }
+    body.innerHTML = `
+      <button id="export-csv-btn" class="btn btn-secondary btn-block">⬇️ تصدير CSV</button>
+      <div class="card-list">${rows.map((r) => `
+      <div class="log-row">
+        ${r.image_url ? `<img class="log-thumb" src="${r.image_url}" alt="" loading="lazy" />` : `<div class="log-thumb placeholder">📷</div>`}
+        <div class="log-info">
+          <p class="log-name">${escapeHtml(r.profiles?.name || "مستخدم")}</p>
+          <p class="log-meta muted small">${fmtDate(r.created_at)}</p>
+        </div>
+        <button class="chip-btn" data-reverify="${r.user_id}">إعادة طلب</button>
+      </div>
+    `).join("")}</div>`;
+
+    body.querySelectorAll("[data-reverify]").forEach((btn) => {
+      btn.onclick = async () => {
+        await window.Admin.requestReVerification(state.user.id, btn.dataset.reverify);
+        showToast("تم إرسال طلب إعادة التوثيق (مسجّل بالسجل الإداري)");
+      };
+    });
+
+    document.getElementById("export-csv-btn").onclick = () => exportVerificationsCsv(rows);
+  }
+
+  function exportVerificationsCsv(rows) {
+    const header = ["الاسم", "الجوال", "التاريخ"];
+    const lines = [header.join(",")];
+    rows.forEach((r) => {
+      const name = (r.profiles?.name || "").replace(/,/g, " ");
+      const phone = (r.profiles?.phone || "").replace(/,/g, " ");
+      lines.push([name, phone, fmtDate(r.created_at)].join(","));
+    });
+    const csv = "\uFEFF" + lines.join("\n"); // BOM لدعم العربية في Excel
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `سجل_التوثيق_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function renderAdminLogs(body) {
+    const logs = await window.Admin.getLogs(150);
+    if (!logs.length) {
+      body.innerHTML = `<p class="muted center-text">لا توجد عمليات إدارية مسجّلة بعد</p>`;
+      return;
+    }
+    body.innerHTML = `<div class="card-list">${logs.map((l) => `
+      <div class="member-row">
+        <div>
+          <p class="member-name">${escapeHtml(actionLabel(l.action))}</p>
+          <p class="muted small">${fmtDate(l.created_at)}</p>
+        </div>
+      </div>
+    `).join("")}</div>`;
+  }
+
+  function actionLabel(action) {
+    const map = {
+      edit_user: "تعديل مستخدم",
+      activate_user: "تفعيل مستخدم",
+      deactivate_user: "تعطيل مستخدم",
+      move_user: "نقل مستخدم",
+      rename_group: "تغيير اسم مجموعة",
+      open_group: "فتح مجموعة",
+      close_group: "إغلاق مجموعة",
+      create_group: "إضافة مجموعة",
+      create_shift: "إضافة نوبة",
+      rename_shift: "تغيير اسم نوبة",
+      open_shift: "فتح نوبة",
+      close_shift: "إغلاق نوبة",
+      request_reverification: "طلب إعادة توثيق",
+      promote_supervisor: "ترقية إلى مشرف",
+      demote_to_user: "تخفيض إلى مستخدم عادي",
+    };
+    return map[action] || action;
+  }
+
+  function statsCardsHtml(stats) {
+    return `
+      <div class="stat-card"><p class="stat-num">${stats.total}</p><p class="stat-label">إجمالي الأعضاء</p></div>
+      <div class="stat-card"><p class="stat-num">${stats.verified}</p><p class="stat-label">الموثّقون</p></div>
+      <div class="stat-card"><p class="stat-num">${stats.notVerified}</p><p class="stat-label">غير الموثّقين</p></div>
+      <div class="stat-card"><p class="stat-num">${stats.rate}%</p><p class="stat-label">نسبة الإنجاز</p></div>
+    `;
+  }
+
+  // ---------------- الإحصائيات (صفحة عامة) ----------------
+  async function renderStats() {
+    const stats = await window.Admin.computeStats(state.selectedShiftId, state.selectedGroupId);
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="page-header">
+          <button class="icon-btn" id="back">→</button>
+          <h2>📊 الإحصائيات</h2>
+        </header>
+        <div class="stats-grid">${statsCardsHtml(stats)}</div>
+        <p class="muted center-text">آخر توثيق: ${fmtDate(stats.lastVerification)}</p>
+      </div>
+    `));
+    document.getElementById("back").onclick = () => setPage("home");
+  }
+
+  // ---------------- لوحة المطور ----------------
+  async function renderDeveloper() {
+    if (!window.Developer.isUIUnlocked()) {
+      root.appendChild(el(`
+        <div class="screen center">
+          <div class="auth-card">
+            <h2>👑 دخول المطور</h2>
+            <form id="dev-unlock" class="form">
+              <label>رمز الدخول <input type="password" name="code" required /></label>
+              <button class="btn btn-primary" type="submit">دخول</button>
+            </form>
+            <button class="btn btn-secondary btn-block" id="back-settings2">رجوع</button>
+          </div>
+        </div>
+      `));
+      document.getElementById("back-settings2").onclick = () => setPage("settings");
+      document.getElementById("dev-unlock").onsubmit = (e) => {
+        e.preventDefault();
+        const code = new FormData(e.target).get("code");
+        if (window.Developer.unlockWithCode(code)) {
+          renderDeveloper();
+        } else {
+          showToast("رمز غير صحيح", "error");
+        }
+      };
+      return;
+    }
+
+    if (!window.Developer.canAccess(state.user)) {
+      root.appendChild(el(`
+        <div class="screen center">
+          <p class="muted">هذا الحساب لا يملك صلاحية المطور في قاعدة البيانات.</p>
+          <button class="btn btn-secondary" id="back-settings3">رجوع</button>
+        </div>
+      `));
+      document.getElementById("back-settings3").onclick = () => setPage("settings");
+      return;
+    }
+
+    const status = await window.Developer.getSystemStatus();
+    const allUsers = await window.DB.getAllUsers();
+    root.appendChild(el(`
+      <div class="screen">
+        <header class="page-header">
+          <button class="icon-btn" id="back">→</button>
+          <h2>👑 لوحة المطور</h2>
+        </header>
+
+        <section class="card">
+          <h3>حالة النظام</h3>
+          <p>الاتصال بالإنترنت: ${status.online ? "🟢 متصل" : "🟠 غير متصل"}</p>
+          <p>Supabase مضبوط: ${status.supabaseConfigured ? "✅" : "❌ راجع الإعدادات"}</p>
+          <p>اتصال قاعدة البيانات: ${status.dbOk ? "🟢 يعمل" : "🔴 لا يستجيب"}</p>
+          <p>عمليات بانتظار المزامنة: ${status.pendingSync}</p>
+          <button class="btn btn-secondary btn-block" id="force-sync">🔄 إعادة مزامنة الآن</button>
+        </section>
+
+        <section class="card">
+          <h3>إدارة المشرفين والأدوار</h3>
+          <div class="card-list">
+            ${allUsers.map((u) => `
+              <div class="member-row wrap">
+                <div>
+                  <p class="member-name">${escapeHtml(u.name || "بدون اسم")}</p>
+                  <p class="muted small">${escapeHtml(u.phone || "")}</p>
+                </div>
+                <select class="chip-select" data-role-user="${u.id}">
+                  <option value="user" ${u.role === "user" ? "selected" : ""}>مستخدم عادي</option>
+                  <option value="supervisor" ${u.role === "supervisor" ? "selected" : ""}>مشرف</option>
+                  <option value="developer" ${u.role === "developer" ? "selected" : ""}>مطوّر</option>
+                </select>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>أدوات الصيانة</h3>
+          <button class="btn btn-secondary btn-block" id="go-admin2">فتح لوحة المشرف (مستخدمون/مجموعات/توثيق/سجل)</button>
+          <button class="btn btn-secondary btn-block" id="show-queue-btn">📦 عرض قائمة الانتظار (${status.pendingSync})</button>
+          <button class="btn btn-danger btn-block" id="clear-cache-btn">🧹 مسح البيانات المحلية وإعادة التحميل</button>
+          <button class="btn btn-danger btn-block" id="lock-dev">🔒 قفل لوحة المطور</button>
+        </section>
+
+        <section class="card">
+          <h3>معلومات الإصدار</h3>
+          <p class="muted small">نظام النوبات والتوثيق — الإصدار 1.1</p>
+          <p class="muted small">Supabase URL: ${escapeHtml((window.SUPABASE_CONFIG || {}).SUPABASE_URL || "—")}</p>
+        </section>
+      </div>
+    `));
+
+    root.querySelectorAll("[data-role-user]").forEach((sel) => {
+      sel.onchange = async () => {
+        const userId = sel.dataset.roleUser;
+        const role = sel.value;
+        if (role === "supervisor") await window.Developer.promoteToSupervisor(state.user.id, userId);
+        else if (role === "user") await window.Developer.demoteToUser(state.user.id, userId);
+        else await window.DB.setUserRole(userId, "developer");
+        showToast("تم تحديث الدور");
+      };
+    });
+
+    document.getElementById("back").onclick = () => setPage("settings");
+    document.getElementById("go-admin2").onclick = () => setPage("admin");
+    document.getElementById("force-sync").onclick = async () => {
+      showToast("جارِ المزامنة...");
+      await window.Developer.forceSync();
+      renderDeveloper();
+    };
+    document.getElementById("lock-dev").onclick = () => {
+      window.Developer.lockUI();
+      setPage("settings");
+    };
+    document.getElementById("show-queue-btn").onclick = async () => {
+      const queue = await window.Sync.getQueue();
+      if (!queue.length) {
+        showToast("لا توجد عناصر بانتظار المزامنة");
+        return;
+      }
+      alert(queue.map((q, i) => `${i + 1}. ${fmtDate(q.created_at)} — ${q.status}`).join("\n"));
+    };
+    document.getElementById("clear-cache-btn").onclick = () => {
+      if (!confirm("هل أنت متأكد من مسح كل البيانات المحلية؟ سيتم تسجيل خروجك من هذا الجهاز.")) return;
+      localStorage.clear();
+      sessionStorage.clear();
+      location.reload();
+    };
+  }
+
+  // ---------------- شريط التنقل السفلي ----------------
+  function initBottomNav() {
+    document.querySelectorAll("#bottom-nav button").forEach((btn) => {
+      btn.onclick = () => setPage(btn.dataset.page);
+    });
+  }
+
+  // ---------------- بدء التشغيل ----------------
+  document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem("dark") === "1") {
+      document.documentElement.classList.add("dark");
+    }
+    initBottomNav();
+    boot();
+  });
+})();
+
+  </script>
+
+  <script>
+    window.addEventListener("error", (e) => {
+      console.error("خطأ غير متوقع:", e.error || e.message);
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      console.error("رفض Promise غير معالج:", e.reason);
+    });
+    // تسجيل Service Worker إن كان الملف sw.js موجودًا بجانب هذا الملف
+    // (لا يسبب أي خطأ لو لم يكن موجودًا)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
