@@ -734,13 +734,19 @@ window.SUPABASE_CONFIG = {
     }
     const phoneNorm = normalizePhone(phone);
 
-    const { data, error } = await client.auth.signUp({
-      phone: phoneNorm,
-      password,
-      options: {
-        data: { name },
-      },
-    });
+    let data, error;
+    try {
+      ({ data, error } = await client.auth.signUp({
+        phone: phoneNorm,
+        password,
+        options: {
+          data: { name },
+        },
+      }));
+    } catch (networkErr) {
+      console.error(networkErr);
+      return { error: "تعذر الاتصال بالخادم (فشل في الجلب). تحقق من اتصال الإنترنت وحاول مجددًا." };
+    }
 
     if (error) {
       return { error: translateAuthError(error) };
@@ -750,13 +756,17 @@ window.SUPABASE_CONFIG = {
     if (userId) {
       // ننشئ صف profiles المرتبط — النوبة/المجموعة تُسند لاحقًا من المشرف
       // أو تلقائيًا لأول مجموعة نشطة (اختياري: عدّل حسب سياسة العمل).
-      await client.from("profiles").upsert({
-        id: userId,
-        name,
-        phone: phoneNorm,
-        role: "user",
-        active: true,
-      });
+      try {
+        await client.from("profiles").upsert({
+          id: userId,
+          name,
+          phone: phoneNorm,
+          role: "user",
+          active: true,
+        });
+      } catch (profileErr) {
+        console.warn("تعذر إنشاء ملف تعريف المستخدم:", profileErr);
+      }
     }
 
     return { data };
@@ -768,17 +778,27 @@ window.SUPABASE_CONFIG = {
       return { error: "التطبيق غير متصل بقاعدة البيانات بعد. تحقق من supabase-config.js" };
     }
     const phoneNorm = normalizePhone(phone);
-    const { data, error } = await client.auth.signInWithPassword({
-      phone: phoneNorm,
-      password,
-    });
+    let data, error;
+    try {
+      ({ data, error } = await client.auth.signInWithPassword({
+        phone: phoneNorm,
+        password,
+      }));
+    } catch (networkErr) {
+      console.error(networkErr);
+      return { error: "تعذر الاتصال بالخادم (فشل في الجلب). تحقق من اتصال الإنترنت وحاول مجددًا." };
+    }
     if (error) return { error: translateAuthError(error) };
 
-    // منع دخول الحسابات المعطّلة من قبل الإدارة
-    const profile = await window.DB.getProfile(data.user.id);
-    if (profile && profile.active === false) {
-      await client.auth.signOut();
-      return { error: "تم تعطيل حسابك من قبل الإدارة. تواصل مع المشرف." };
+    // منع دخول الحسابات المعطّلة من قبل الإدارة (لا نعطّل تسجيل الدخول لو تعذّر التحقق نفسه)
+    try {
+      const profile = await window.DB.getProfile(data.user.id);
+      if (profile && profile.active === false) {
+        await client.auth.signOut();
+        return { error: "تم تعطيل حسابك من قبل الإدارة. تواصل مع المشرف." };
+      }
+    } catch (e) {
+      console.warn("تعذر التحقق من حالة الحساب، سيُسمح بالدخول:", e);
     }
 
     return { data };
@@ -1558,21 +1578,29 @@ window.SUPABASE_CONFIG = {
       const btn = e.target.querySelector("button");
       btn.disabled = true;
       btn.textContent = "جارِ الدخول...";
-      const res = await window.Auth.signIn({
-        phone: fd.get("phone"),
-        password: fd.get("password"),
-      });
-      btn.disabled = false;
-      btn.textContent = "دخول";
-      if (res.error) {
+      try {
+        const res = await window.Auth.signIn({
+          phone: fd.get("phone"),
+          password: fd.get("password"),
+        });
+        if (res.error) {
+          const box = document.getElementById("login-error");
+          box.textContent = res.error;
+          box.classList.remove("hidden");
+          return;
+        }
+        state.user = await window.Auth.getSessionUser();
+        await loadShiftsAndGroups();
+        setPage("home");
+      } catch (err) {
+        console.error(err);
         const box = document.getElementById("login-error");
-        box.textContent = res.error;
+        box.textContent = "تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت وحاول مجددًا.";
         box.classList.remove("hidden");
-        return;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "دخول";
       }
-      state.user = await window.Auth.getSessionUser();
-      await loadShiftsAndGroups();
-      setPage("home");
     };
   }
 
@@ -1624,33 +1652,40 @@ window.SUPABASE_CONFIG = {
       const btn = e.target.querySelector("button");
       btn.disabled = true;
       btn.textContent = "جارِ الإنشاء...";
-      const res = await window.Auth.signUp({
-        name: fd.get("name"),
-        phone: fd.get("phone"),
-        password: fd.get("password"),
-      });
-      btn.disabled = false;
-      btn.textContent = "إنشاء الحساب والدخول";
+      try {
+        const res = await window.Auth.signUp({
+          name: fd.get("name"),
+          phone: fd.get("phone"),
+          password: fd.get("password"),
+        });
 
-      if (res.error) {
-        box.textContent = res.error;
-        box.classList.remove("hidden");
-        return;
-      }
+        if (res.error) {
+          box.textContent = res.error;
+          box.classList.remove("hidden");
+          return;
+        }
 
-      const signInRes = await window.Auth.signIn({
-        phone: fd.get("phone"),
-        password: fd.get("password"),
-      });
-      if (signInRes.error) {
-        box.textContent = signInRes.error;
+        const signInRes = await window.Auth.signIn({
+          phone: fd.get("phone"),
+          password: fd.get("password"),
+        });
+        if (signInRes.error) {
+          box.textContent = signInRes.error;
+          box.classList.remove("hidden");
+          return;
+        }
+        state.user = await window.Auth.getSessionUser();
+        await loadShiftsAndGroups();
+        showToast("تم إنشاء الحساب بنجاح ✅");
+        setPage("home");
+      } catch (err) {
+        console.error(err);
+        box.textContent = "تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت وحاول مجددًا.";
         box.classList.remove("hidden");
-        return;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "إنشاء الحساب والدخول";
       }
-      state.user = await window.Auth.getSessionUser();
-      await loadShiftsAndGroups();
-      showToast("تم إنشاء الحساب بنجاح ✅");
-      setPage("home");
     };
   }
 
